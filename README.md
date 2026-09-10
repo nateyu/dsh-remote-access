@@ -43,7 +43,7 @@ Turn on Start. Scan the QR code or open a listed `http://<lan-ip>:3090` URL on a
 
 ### Cloudflare
 
-`cloudflared` is **not** shipped in the npm tarball (20MB+ per OS). `npm install` / `dsh plugin add` runs `postinstall`, which downloads the current GitHub release into **this package’s** `bin/` directory (`node_modules/@neil-yu/dsh-remote-access/bin/cloudflared`). That path is not under `$DSH_HOME`. If `postinstall` cannot reach GitHub, the settings page downloads on first “Start public access”. An executable already on `PATH`, Homebrew’s usual bins, or `cloudflaredPath` is used instead and no download runs.
+`cloudflared` is **not** shipped in the npm tarball (20MB+ per OS). The first “Start public access” downloads the current GitHub release into **this package’s** `bin/` directory (`node_modules/@neil-yu/dsh-remote-access/bin/cloudflared`). That path is not under `$DSH_HOME`. An executable already on `PATH`, Homebrew’s usual bins, or `cloudflaredPath` is used instead and no download runs.
 
 - Quick tunnel: Start public access. Cloudflare prints a `*.trycloudflare.com` URL (QR on the settings page). The public PIN is required.
 - Named tunnel: paste a tunnel token from Zero Trust. Point that tunnel’s ingress at `http://127.0.0.1:3090` (or your `listenPort`).

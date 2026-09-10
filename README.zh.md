@@ -43,7 +43,7 @@ dsh plugin --profile web add /path/to/dsh-remote-access
 
 ### Cloudflare
 
-npm 包里**不带** `cloudflared`（每个系统 20MB+）。`npm install` / `dsh plugin add` 会跑 `postinstall`，从 GitHub 下当前 release 到**本插件目录**的 `bin/`（`node_modules/@neil-yu/dsh-remote-access/bin/cloudflared`），不写 `$DSH_HOME`。若安装时访问不了 GitHub，设置页第一次点「开启公网」时再下。PATH、Homebrew 常见目录、或 `cloudflaredPath` 里已有可执行文件则直接用，不再下载。
+npm 包里**不带** `cloudflared`（每个系统 20MB+）。第一次点「开启公网」时，从 GitHub 下当前 release 到**本插件目录**的 `bin/`（`node_modules/@neil-yu/dsh-remote-access/bin/cloudflared`），不写 `$DSH_HOME`。PATH、Homebrew 常见目录、或 `cloudflaredPath` 里已有可执行文件则直接用，不再下载。
 
 - 快速隧道：开启公网后会得到 `*.trycloudflare.com` 地址（设置页有二维码），必须使用公网 PIN。
 - 命名隧道：粘贴 Zero Trust 里的 tunnel token。把该隧道的 ingress 指到 `http://127.0.0.1:3090`（或你配置的 `listenPort`）。
