@@ -1,4 +1,4 @@
-# dsh-remote-access
+# @neil-yu/dsh-remote-access
 
 [English](README.md) | 中文
 
@@ -8,12 +8,12 @@
 
 设置导航随系统语言切换：中文「远程访问」，English “Remote access”。局域网、Cloudflare、SSH 的地址都会在该页生成二维码。
 
-状态只写一个文件：`$DSH_HOME/storages/dsh-remote-access.json`（权限 `0600`）。`dsh plugin remove` 会跑 `preuninstall`，删掉该文件，以及旧名留下的 `$DSH_HOME/dsh-gateway/`。`storages` 目录本身保留。
+状态只写一个文件：`$DSH_HOME/storages/dsh-remote-access.json`（权限 `0600`）。`dsh plugin remove` 会跑 `preuninstall`，删掉该文件，以及旧名留下的 `$DSH_HOME/dsh-gateway/` 和 `$DSH_HOME/storages/dsh-remote-proxyy.json`。`storages` 目录本身保留。
 
 ## 安装
 
 ```sh
-dsh plugin --profile web add dsh-remote-access
+dsh plugin --profile web add @neil-yu/dsh-remote-access
 ```
 
 本地 checkout：
@@ -28,7 +28,7 @@ dsh plugin --profile web add /path/to/dsh-remote-access
 
 ```yaml
 - id: dsh-remote-access
-  name: dsh-remote-access
+  name: '@neil-yu/dsh-remote-access'
   config:
     listenPort: 3090
     listenHost: 0.0.0.0
@@ -43,7 +43,7 @@ dsh plugin --profile web add /path/to/dsh-remote-access
 
 ### Cloudflare
 
-npm 包里**不带** `cloudflared`（每个系统 20MB+）。`npm install` / `dsh plugin add` 会跑 `postinstall`，从 GitHub 下当前 release 到**本插件目录**的 `bin/`（`node_modules/dsh-remote-access/bin/cloudflared`），不写 `$DSH_HOME`。若安装时访问不了 GitHub，设置页第一次点「开启公网」时再下。PATH、Homebrew 常见目录、或 `cloudflaredPath` 里已有可执行文件则直接用，不再下载。
+npm 包里**不带** `cloudflared`（每个系统 20MB+）。`npm install` / `dsh plugin add` 会跑 `postinstall`，从 GitHub 下当前 release 到**本插件目录**的 `bin/`（`node_modules/@neil-yu/dsh-remote-access/bin/cloudflared`），不写 `$DSH_HOME`。若安装时访问不了 GitHub，设置页第一次点「开启公网」时再下。PATH、Homebrew 常见目录、或 `cloudflaredPath` 里已有可执行文件则直接用，不再下载。
 
 - 快速隧道：开启公网后会得到 `*.trycloudflare.com` 地址（设置页有二维码），必须使用公网 PIN。
 - 命名隧道：粘贴 Zero Trust 里的 tunnel token。把该隧道的 ingress 指到 `http://127.0.0.1:3090`（或你配置的 `listenPort`）。
@@ -74,7 +74,7 @@ npm test
 ## 卸载
 
 ```sh
-dsh plugin --profile web remove dsh-remote-access
+dsh plugin --profile web remove @neil-yu/dsh-remote-access
 ```
 
 重启 `dsh web`。`preuninstall` 会删除 `$DSH_HOME/storages/dsh-remote-access.json`。卸掉 npm 包时 `bin/cloudflared` 会一并删掉。若只有跑 `dsh web` 时才设置 `DSH_HOME`，卸载时请导出同一个值。
