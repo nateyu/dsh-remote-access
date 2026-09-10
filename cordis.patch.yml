@@ -1,0 +1,4 @@
+# Insert the Host plugin that serves the Remote access settings page.
+- insert:
+    - id: dsh-remote-access
+      name: dsh-remote-access

@@ -1,0 +1,13 @@
+node_modules/
+*.log
+*.tgz
+.env
+.env.*
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.workbuddy/
+coverage/
+client/client.js
+/bin/

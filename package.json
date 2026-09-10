@@ -1,0 +1,79 @@
+{
+  "name": "dsh-remote-access",
+  "version": "0.1.0",
+  "description": "Reach local DeepSeek Harness web from the LAN, Cloudflare Tunnel, or an SSH reverse forward.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": "./client/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "client/client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build:client": "node client/build.mjs",
+    "test": "node --test --test-timeout=30000 \"test/*.test.js\"",
+    "prepare": "node client/build.mjs",
+    "prepack": "node client/build.mjs",
+    "postinstall": "node lib/cloudflared-install.js",
+    "preuninstall": "node lib/uninstall.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nateyu/dsh-remote-access.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nateyu/dsh-remote-access/issues"
+  },
+  "homepage": "https://github.com/nateyu/dsh-remote-access#readme",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "remote-access",
+    "cloudflare",
+    "ssh",
+    "lan"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  }
+}
