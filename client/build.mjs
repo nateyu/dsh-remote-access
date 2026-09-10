@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
@@ -6,7 +6,8 @@ import { build } from 'esbuild'
 const sourceDir = dirname(fileURLToPath(import.meta.url))
 const packageRoot = resolve(sourceDir, '..')
 const outputPath = resolve(packageRoot, 'client/client.js')
-const loaderId = process.env.DSH_REMOTE_ACCESS_CLIENT_ID ?? 'dsh-remote-access'
+const pkg = JSON.parse(await readFile(resolve(packageRoot, 'package.json'), 'utf8'))
+const loaderId = process.env.DSH_REMOTE_ACCESS_CLIENT_ID ?? pkg.name
 
 const result = await build({
   entryPoints: [resolve(sourceDir, 'index.jsx')],

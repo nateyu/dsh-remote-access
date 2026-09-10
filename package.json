@@ -1,6 +1,6 @@
 {
   "name": "@neil-yu/dsh-remote-access",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Reach local DeepSeek Harness web from the LAN, Cloudflare Tunnel, or an SSH reverse forward.",
   "type": "module",
   "main": "lib/index.js",
