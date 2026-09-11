@@ -4,7 +4,7 @@ English | [中文](README.zh.md)
 
 A DeepSeek Harness settings plugin. After LAN, Cloudflare, or SSH is started, this machine listens on `listenPort` (default `3090`) and reverse-proxies HTTP and WebSocket onto loopback `dsh web`. The three entries share that port and it is not listened on while all are off. A remote entry is host-equivalent; public access requires the 10-character PIN.
 
-`dsh web` itself stays bound to loopback. All traffic changes stay on the 3090 hop: the proxy talks to `dsh web` as `127.0.0.1:<dsh-port>`, and rewrites the index HTML so the in-browser client matches that hop (otherwise the session list stays empty, because `location.hostname` is still the LAN or public name). That rewrite is not a Cordis extension other plugins can hook. This plugin's settings UI uses the public slots / locale / Connection RPC APIs.
+`dsh web` itself stays bound to loopback. The 3090 hop talks to `dsh web` as `127.0.0.1:<dsh-port>`, rewrites Host/Origin/Referer and loopback `Location` headers, and completes the launch-token cookie exchange so a phone never needs the URL printed by `dsh web`. On the index document it sets Connection's documented `__DSH_TRANSPORT__.ownsHost` flag so Host settings (models, plugin config) stay host-backed: the browser hostname is still the LAN or public name. This plugin's settings UI uses the public slots / locale / Connection RPC APIs.
 
 The settings nav label follows the product locale: 「远程访问」 in Chinese, “Remote access” in English. LAN, Cloudflare, and SSH URLs each get a QR code on that page.
 
@@ -60,7 +60,7 @@ Same as `ssh -R 0.0.0.0:<remotePort>:127.0.0.1:<listenPort>`. Reaching that port
 
 ## Security
 
-A remote session is the same as sitting at this machine: the visitor can run the local agent **and** open Settings → Remote access (read PINs, start or stop LAN / Cloudflare / SSH). That follows from the shared `listenPort` reverse-proxy, which rewrites Host/Origin to loopback so `dsh web` does not need a separate trust path. Public Hosts always require the 10-character PIN. Starting Cloudflare or SSH asks for confirmation. Login guesses are rate-limited per client IP (`cf-connecting-ip` on Cloudflare, otherwise the TCP peer). Do not put this listener on an untrusted network without the PIN.
+A remote session is the same as sitting at this machine: the visitor can run the local agent **and** open Settings → Remote access (read PINs, start or stop LAN / Cloudflare / SSH). The shared `listenPort` hop rewrites Host/Origin to loopback and completes `dsh web`'s launch-token cookie exchange, so a phone never needs the URL printed by `dsh web`. Public Hosts always require the 10-character PIN. Starting Cloudflare or SSH asks for confirmation. Login guesses are rate-limited per client IP (`cf-connecting-ip` on Cloudflare, otherwise the TCP peer). Do not put this listener on an untrusted network without the PIN.
 
 ## Develop
 
@@ -81,6 +81,6 @@ Restart `dsh web`. The `preuninstall` script removes `$DSH_HOME/storages/dsh-rem
 
 ## Limits
 
-- Control RPCs still use Connection RPC with `authority: loopback`. LAN, Cloudflare, and SSH all reverse-proxy through `listenPort`. That hop rewrites the request as loopback and the index HTML so the browser client matches; it is not a Cordis extension other plugins can hook.
+- Control RPCs use Connection's JSON envelope on a dedicated prefix mounted on this plugin's `webServer`. LAN, Cloudflare, and SSH all reverse-proxy through `listenPort`. That hop rewrites Host/Origin to loopback, completes the launch-token cookie exchange, and sets `ownsHost` on the index document.
 - Named-tunnel DNS and ingress are configured in Cloudflare, not here.
 - `dsh web` itself stays on loopback. Opening `0.0.0.0` on the Harness server is still unsupported.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 
 import { errorCode, fail } from '../lib/errors.js'
 import { REMOTE_ENDPOINTS } from '../lib/api.js'
-import { installRemoteRpc } from '../lib/rpc.js'
+import { createRemoteRpcHandler } from '../lib/rpc.js'
 
 test('fail only emits Connection RPC error codes', () => {
   assert.equal(fail('unavailable', 'missing').error.code, 'internal')
@@ -21,21 +21,12 @@ test('errorCode never forwards Node errno strings', () => {
 })
 
 test('RPC maps Node listen failures to internal instead of a Zod-invalid code', async () => {
-  const ctx = {}
-  ctx.connection = {
-    rpc: {
-      handle(_channel, handler) {
-        ctx.handler = handler
-        return () => {}
-      },
-    },
-  }
-  installRemoteRpc(ctx, {
+  const handler = createRemoteRpcHandler({
     startCloudflare: async () => {
       throw Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' })
     },
   })
-  const result = await ctx.handler(REMOTE_ENDPOINTS.cloudflareStart, {})
+  const result = await handler(REMOTE_ENDPOINTS.cloudflareStart, {})
   assert.equal(result.ok, false)
   assert.equal(result.error.code, 'internal')
   assert.deepEqual(result.error.details, {})

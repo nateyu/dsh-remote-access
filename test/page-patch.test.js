@@ -1,7 +1,44 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { rewriteHtmlDocument, rewriteUpgradeHeaders, rewriteUpstreamHeaders, sanitizeDownstreamHeaders } from '../lib/page-patch.js'
+import {
+  attachLaunchToken,
+  hasBrowserSessionCookie,
+  hasLaunchTokenQuery,
+  launchTokenFrom,
+  rewriteHtmlDocument,
+  rewriteLoopbackLocation,
+  rewriteUpgradeHeaders,
+  rewriteUpstreamHeaders,
+  sanitizeDownstreamHeaders,
+} from '../lib/page-patch.js'
+
+test('launch token helpers match Connection GET / exchange', () => {
+  assert.equal(hasLaunchTokenQuery('/'), false)
+  assert.equal(hasLaunchTokenQuery('/?token=abc'), true)
+  assert.equal(attachLaunchToken('/', 'secret'), '/?token=secret')
+  assert.equal(attachLaunchToken('/?x=1', 'secret'), '/?x=1&token=secret')
+  assert.equal(hasBrowserSessionCookie({}), false)
+  assert.equal(hasBrowserSessionCookie({ cookie: 'other=1' }), false)
+  assert.equal(hasBrowserSessionCookie({ cookie: 'dsh-auth-abcd=v1.x.y' }), true)
+  assert.equal(
+    launchTokenFrom((base) => `${base}/?token=launch-one`, 3080),
+    'launch-one',
+  )
+  assert.throws(
+    () => launchTokenFrom((base) => `${base}/`, 3080),
+    /one token query/,
+  )
+})
+
+test('rewriteLoopbackLocation keeps 303 on the public hop', () => {
+  const relative = rewriteLoopbackLocation({ location: '/' }, 3080)
+  assert.equal(relative.location, '/')
+  const absolute = rewriteLoopbackLocation({ location: 'http://127.0.0.1:3080/' }, 3080)
+  assert.equal(absolute.location, '/')
+  const other = rewriteLoopbackLocation({ location: 'http://example.com/' }, 3080)
+  assert.equal(other.location, 'http://example.com/')
+})
 
 test('rewriteUpstreamHeaders forces loopback Host, Origin, and same-origin fetch metadata', () => {
   const headers = rewriteUpstreamHeaders({
@@ -37,11 +74,13 @@ test('rewriteUpstreamHeaders forces loopback Host, Origin, and same-origin fetch
   assert.equal(stripped['accept-encoding'], undefined)
 })
 
-test('rewriteHtmlDocument aligns the proxied document with the loopback hop', () => {
+test('rewriteHtmlDocument sets Connection ownsHost and does not wrap the module loader', () => {
   const html = '<!doctype html><html><head><title>x</title></head><body></body></html>'
   const rewritten = rewriteHtmlDocument(html)
   assert.ok(rewritten.includes('data-dsh-remote-access-proxy'))
-  assert.ok(rewritten.includes('isLoopback'))
+  assert.ok(rewritten.includes('ownsHost'))
+  assert.ok(!rewritten.includes('__ModuleLoader__'))
+  assert.ok(!rewritten.includes('ctx.provide'))
   assert.equal(rewriteHtmlDocument(rewritten), rewritten)
 })
 

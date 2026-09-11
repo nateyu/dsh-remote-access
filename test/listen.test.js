@@ -31,7 +31,7 @@ function get(port, headers, path = '/') {
     const req = httpRequest({ hostname: '127.0.0.1', port, path, headers }, (res) => {
       let body = ''
       res.on('data', (chunk) => { body += chunk })
-      res.on('end', () => resolve({ status: res.statusCode, body }))
+      res.on('end', () => resolve({ status: res.statusCode, body, headers: res.headers }))
     })
     req.on('error', reject)
     req.end()
@@ -65,6 +65,82 @@ test('gateway rewrites Host to loopback before the upstream sees the request', a
     assert.equal(seen.site, 'same-origin')
     assert.match(res.body, /<body>ok<\/body>/)
     assert.ok(res.body.includes('data-dsh-remote-access-proxy'))
+    assert.ok(res.body.includes('ownsHost'))
+  } finally {
+    await gateway.close()
+    await close(upstream)
+  }
+})
+
+test('GET / without a dsh-auth cookie completes the dsh web launch-token exchange', async () => {
+  const seen = []
+  const upstream = createServer((req, res) => {
+    seen.push(req.url)
+    if (String(req.url).includes('token=secret-token')) {
+      res.writeHead(303, {
+        location: `http://127.0.0.1:${dshPort}/`,
+        'set-cookie': 'dsh-auth-loop=v1.cookie',
+      })
+      res.end()
+      return
+    }
+    res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' })
+    res.end('dsh web authentication required; reopen the URL printed by dsh web.\n')
+  })
+  const dshPort = await listen(upstream)
+  const state = { ...emptyState(), lanEnabled: true, lanPinRequired: false, lanPin: randomPin(), publicPin: randomPin() }
+  const gateway = createProxyServer({
+    listenHost: '127.0.0.1',
+    listenPort: 0,
+    dshPort,
+    getState: () => state,
+    publicOpen: () => false,
+    launchToken: () => 'secret-token',
+  })
+  const port = await listen(gateway.server)
+  try {
+    const first = await get(port, { host: '192.168.1.20:3090', accept: 'text/html' })
+    assert.equal(first.status, 303)
+    assert.equal(first.headers.location, '/')
+    assert.match(String(first.headers['set-cookie']), /dsh-auth-loop/)
+    assert.deepEqual(seen, ['/?token=secret-token'])
+  } finally {
+    await gateway.close()
+    await close(upstream)
+  }
+})
+
+test('expired dsh-auth cookie retries GET / with the launch token', async () => {
+  const seen = []
+  const upstream = createServer((req, res) => {
+    seen.push(req.url)
+    if (String(req.url).includes('token=secret-token')) {
+      res.writeHead(303, { location: '/', 'set-cookie': 'dsh-auth-loop=v1.fresh' })
+      res.end()
+      return
+    }
+    res.writeHead(401, { 'content-type': 'text/plain' })
+    res.end('dsh web authentication required; reopen the URL printed by dsh web.\n')
+  })
+  const dshPort = await listen(upstream)
+  const state = { ...emptyState(), lanEnabled: true, lanPinRequired: false, lanPin: randomPin(), publicPin: randomPin() }
+  const gateway = createProxyServer({
+    listenHost: '127.0.0.1',
+    listenPort: 0,
+    dshPort,
+    getState: () => state,
+    publicOpen: () => false,
+    launchToken: () => 'secret-token',
+  })
+  const port = await listen(gateway.server)
+  try {
+    const res = await get(port, {
+      host: '192.168.1.20:3090',
+      accept: 'text/html',
+      cookie: 'dsh-auth-loop=v1.expired',
+    })
+    assert.equal(res.status, 303)
+    assert.deepEqual(seen, ['/', '/?token=secret-token'])
   } finally {
     await gateway.close()
     await close(upstream)

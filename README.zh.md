@@ -4,7 +4,7 @@
 
 开启局域网、Cloudflare 或 SSH 后，本机在 `listenPort`（默认 `3090`）上监听，把 HTTP 和 WebSocket 转到回环上的 `dsh web`。三种入口共用该端口，全部关掉时不监听。远程入口等于本机权限，公网必须使用 10 位 PIN。
 
-`dsh web` 本身仍只绑回环。流量改写都在 3090 这一跳：代理以 `127.0.0.1:<dsh-port>` 去连 `dsh web`，并改写首页 HTML，让浏览器里的客户端和这一跳一致（否则 `location.hostname` 仍是局域网/公网名，会话列表会是空的）。这不是其他插件能 hook 的 Cordis 扩展。本插件设置页只用公开的 slots / locale / Connection RPC。
+`dsh web` 本身仍只绑回环。3090 这一跳以 `127.0.0.1:<dsh-port>` 去连 `dsh web`，改写 Host/Origin/Referer 以及指回 loopback 的 `Location`，并完成启动 token 换 cookie，手机不必打开 `dsh web` 打印的那个 URL。首页文档会带上 Connection 文档里的 `__DSH_TRANSPORT__.ownsHost`，让模型、插件配置等 Host 设置仍写回本机：浏览器地址栏仍是局域网或公网名。本插件设置页只用公开的 slots / locale / Connection RPC。
 
 设置导航随系统语言切换：中文「远程访问」，English “Remote access”。局域网、Cloudflare、SSH 的地址都会在该页生成二维码。
 
@@ -60,7 +60,7 @@ VPS 0.0.0.0:<远程端口>  →  127.0.0.1:<listenPort>
 
 ## 安全
 
-远程会话等于坐在这台机器前：访问者能跑本地 agent，**也能**打开设置 → 远程访问（读取 PIN、开关局域网 / Cloudflare / SSH）。三条入口都经共用的 `listenPort` 反代到 `dsh web`，并把 Host/Origin 改成 loopback，这样不必再给 `dsh web` 单独做一套信任路径。公网 Host 一律要 10 位 PIN。开启 Cloudflare 或 SSH 前会确认。登录猜测按客户端 IP 限速（Cloudflare 上用 `cf-connecting-ip`，否则用 TCP 对端）。不要在未开 PIN 的情况下把监听端口暴露到不信任的网络。
+远程会话等于坐在这台机器前：访问者能跑本地 agent，**也能**打开设置 → 远程访问（读取 PIN、开关局域网 / Cloudflare / SSH）。共用的 `listenPort` 这一跳会把 Host/Origin 改成 loopback，并替浏览器完成 `dsh web` 的启动 token 换 cookie，手机不必打开 `dsh web` 打印的那个 URL。公网 Host 一律要 10 位 PIN。开启 Cloudflare 或 SSH 前会确认。登录猜测按客户端 IP 限速（Cloudflare 上用 `cf-connecting-ip`，否则用 TCP 对端）。不要在未开 PIN 的情况下把监听端口暴露到不信任的网络。
 
 ## 开发
 
@@ -81,6 +81,6 @@ dsh plugin --profile web remove @neil-yu/dsh-remote-access
 
 ## 限制
 
-- 控制类 RPC 仍使用 Connection RPC 的 `authority: loopback`。局域网、Cloudflare、SSH 都经 `listenPort` 反代。这一跳会把请求改成 loopback，并改写首页 HTML 让浏览器客户端一致；不是其他插件能 hook 的 Cordis 扩展。
+- 控制类 RPC 使用 Connection 的 JSON 信封，前缀挂在本插件的 `webServer` 上。局域网、Cloudflare、SSH 都经 `listenPort` 反代。这一跳把 Host/Origin 改成 loopback、完成启动 token 换 cookie，并在首页带上 `ownsHost`。
 - 命名隧道的 DNS 与 ingress 在 Cloudflare 侧配置。
 - `dsh web` 本身仍只绑回环。Harness 服务器上的 `0.0.0.0` 绑定仍然不受支持。
